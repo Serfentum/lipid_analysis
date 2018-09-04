@@ -15,9 +15,13 @@ def remove_na_peaks(df, fraction=1):
     too_many_na = df[samples_wo_controls_qc].isna().sum(axis=1) / df[samples_wo_controls_qc].shape[1] > fraction
     na_peaks = too_many_na[too_many_na].index
 
+    # Some informative message about number of dropped peaks to stdout
+    print(f'Number of dropped peaks is: {len(na_peaks)}')
+
     # Get rid of these peaks
     df = df.drop(na_peaks)
     return df
+
 
 def substitute_na(df):
     """
