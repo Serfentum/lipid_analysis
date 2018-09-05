@@ -6,7 +6,52 @@ from sklearn.manifold import MDS
 import matplotlib.pyplot as plt
 
 
-def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, title='PCA', locus='best'):
+def reduce_dimensions(df, analysis, species, included_variants, excluded_variants, separation_feature, functions):
+    """
+    Top function to perform dimensionality reduction, plot graph and save figure
+    :param df: df - dataframe merged with metadata
+    :param analysis: str - lowercase name of analysis, e.g. pca or mds
+    :param species: str - name of species
+    :param included_variants: dict - dictionary with selected feature: variant for analysis
+    :param excluded_variants: dict - dictionary with excluded feature: variant from analysis
+    :param separation_feature: str - name of feature which will be separated on plot by color, e.g. tissue or age
+    :param functions: dict - dictionary with name: transformation_function
+    :return:
+    """
+    # Create title
+    title = construct_title(analysis, species, included_variants, separation_feature)
+
+    # Take appropriate subset of data
+    ss = subset(df, included_variants, excluded_variants)
+    # Extract y and classes for plot
+    y, classes = extract_data_for_plot(ss, separation_feature)
+
+    # Transform selected samples with PCA or MDS or something else
+    transforming(analysis, functions, ss, title, y, classes)
+
+
+def transforming(analysis, functions, ss, title, y, classes):
+    """
+    Perform appropriate transformation and plotting, save figure
+    :param analysis: str - name of analysis, e.g. pca or mds
+    :param functions: dict - dictionary with name: transformation_function
+    :param ss: df - chosen subset of data
+    :param title: str - title of plot and name of file
+    :param y: sequence - collection of observation labels e.g. old/young for age, bones/blood for tiessue etc.
+    :param classes: sequence - container with unique labels of observations
+    :return:
+    """
+    if analysis == 'pca':
+        transformed, (var1, var2) = functions[analysis](ss)
+        # Draw and save plot
+        draw_dimensionality_reduction(title, transformed, y, classes, title=title, var1=var1, var2=var2)
+    else:
+        transformed = functions[analysis](ss)
+        # Draw and save plot
+        draw_dimensionality_reduction(title, transformed, y, classes, title=title)
+
+
+def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, title='PCA', var1=0, var2=0, locus='best'):
     """
     Plot results of dimensionality collapsing
     :param name: str - name of saved figure
@@ -15,6 +60,8 @@ def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, ti
     :param classes: sequence - container with unique labels of observations
     :param colors: sequence - container with colors in #HHHHHH format where H is a hex digit
     :param title: str - title of figure
+    :param var1: float - portion of explained variance by PC1
+    :param var2: float - portion of explained variance by PC1
     :param locus: str - position of legend
     :return:
     """
@@ -34,8 +81,11 @@ def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, ti
                         alpha=0.8, label=sp)
 
     # Metadata
-    xlab = 'PC1'
-    ylab = 'PC2'
+    # For pca plot add axis labels with explained variance portion
+    if 'PCA' in title:
+        xlab = f'PC1, {var1}'
+        ylab = f'PC2, {var2}'
+
     plt.legend(loc=locus, shadow=False)
     plt.title(title)
     plt.xlabel(xlab)
@@ -86,7 +136,8 @@ def extract_data_for_plot(df, sample_feature):
 
 def pca_transform(df, n_components=2):
     """
-    Transform data for PCA, meta constant should be predefined
+    Transform data for PCA
+    meta constant should be predefined
     :param df: df - subset of dataframe merged with metadata
     :param n_components: int - number of components
     :return: array - np array with number of samples x n_components shape
@@ -96,7 +147,11 @@ def pca_transform(df, n_components=2):
     # Take numeric subset of data and
     # Transpose df, because as we love in ml ROWS are observations and COLUMNS are features and
     # all normal functions follow this convention. Thus we finally transpose df to normal form
-    return pca.fit_transform(df.iloc[:-meta].T)
+    transformed = pca.fit_transform(df.iloc[:-meta].T)
+
+    # Get info about variance percentages
+    variance = pca.explained_variance_ratio_
+    return transformed, tuple(map(lambda x: np.round(x, 2), variance))
 
 
 def mds_transform(df, n_components=2):
