@@ -6,28 +6,53 @@ from sklearn.manifold import MDS
 import matplotlib.pyplot as plt
 
 
-def reduce_dimensions(df, analysis, species, included_variants, excluded_variants, separation_feature, functions):
+def reduce_dimensions(df, analysis, species, separation_feature, functions, included_variants, excluded_variants={}, with_mass=True):
     """
     Top function to perform dimensionality reduction, plot graph and save figure
     :param df: df - dataframe merged with metadata
     :param analysis: str - lowercase name of analysis, e.g. pca or mds
     :param species: str - name of species
-    :param included_variants: dict - dictionary with selected feature: variant for analysis
-    :param excluded_variants: dict - dictionary with excluded feature: variant from analysis
     :param separation_feature: str - name of feature which will be separated on plot by color, e.g. tissue or age
     :param functions: dict - dictionary with name: transformation_function
+    :param included_variants: dict - dictionary with selected feature: variant for analysis
+    :param excluded_variants: dict - dictionary with excluded feature: variant from analysis
+    :param with_mass: bool - whether to take samples without mass in the analysis
     :return:
     """
     # Create title
     title = construct_title(analysis, species, included_variants, separation_feature)
 
     # Take appropriate subset of data
-    ss = subset(df, included_variants, excluded_variants)
+    ss = subset(df, included_variants, excluded_variants, with_mass=with_mass)
     # Extract y and classes for plot
     y, classes = extract_data_for_plot(ss, separation_feature)
 
     # Transform selected samples with PCA or MDS or something else
     transforming(analysis, functions, ss, title, y, classes)
+
+
+def draw_for_all(df, feature, analysis, species, separation_feature, functions, excluded_variants={}, with_mass=True):
+    """
+    Draw and save plots for analysis of everything feature variant separately
+    :param df: df - dataframe merged with metadata
+    :param feature: str - index of df row which contains variants which should be plotted separately
+    :param analysis: str - lowercase name of analysis, e.g. pca or mds
+    :param species: str - name of species
+    :param separation_feature: str - name of feature which will be separated on plot by color, e.g. tissue or age
+    :param functions: dict - dictionary with name: transformation_function
+    :param excluded_variants: dict - dictionary with excluded feature: variant from analysis
+    :param with_mass: bool - whether to take samples without mass in the analysis
+    :return:
+    """
+    # Select non NA variants
+    variants = df.loc[feature].unique()
+    nas = pd.isna(variants)
+
+    # Draw and save plot for each subset of data with particular value of feature
+    for variant in variants[~nas]:
+        included_variants = {feature: variant}
+        reduce_dimensions(df, analysis, species, separation_feature, functions, included_variants, excluded_variants,
+                          with_mass)
 
 
 def transforming(analysis, functions, ss, title, y, classes):
@@ -85,11 +110,11 @@ def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, ti
     if 'PCA' in title:
         xlab = f'PC1, {var1}'
         ylab = f'PC2, {var2}'
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
 
     plt.legend(loc=locus, shadow=False)
     plt.title(title)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
 
     # Create dir for images and save svg image
     os.makedirs('img', exist_ok=True)
@@ -170,7 +195,7 @@ def mds_transform(df, n_components=2):
     return transformed
 
 
-def subset(df, include, exclude={}, with_mass=True):
+def subset(df, include, exclude={}, with_mass=with_mass):
     """
     Take appropriate slice of data, use samples_with_mass constant which should be predefined.
     At least one of include and exclude should be provided, could be both
