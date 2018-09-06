@@ -22,7 +22,7 @@ def percentille_normalization(df, q=0.75):
 
     # Normalize by selected percentile
     numeric_part = numeric_part.subtract(numeric_part.quantile(q, axis=1), axis=0)
-    df.loc[df.index[:-meta], samples] = numeric_part.astype('O')
+    df.loc[df.index[:-meta], samples] = numeric_part
     return df
 
 
