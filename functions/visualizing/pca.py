@@ -20,7 +20,7 @@ def reduce_dimensions(df, analysis, species, separation_feature, functions, incl
     :return:
     """
     # Create title
-    title = construct_title(analysis, species, included_variants, separation_feature)
+    title = construct_title(analysis, species, included_variants, separation_feature, with_mass)
 
     # Take appropriate subset of data
     ss = subset(df, included_variants, excluded_variants, with_mass=with_mass)
@@ -121,13 +121,14 @@ def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, ti
     plt.savefig(f'img/{name}', format='svg', bbox_inches='tight')
 
 
-def construct_title(analysis, species, included_variants, separation_feature):
+def construct_title(analysis, species, included_variants, separation_feature, with_mass):
     """
     Construct title for plot by inferring key features of samples in dataset
     :param analysis: str - name of analysis, e.g. pca or MDS
     :param species: str - name of species, e.g. H. sapiens or rats
     :param included_variants: dict - dictionary with selected feature: variant for analysis
     :param separation_feature: str - name of feature which will be separated on plot by color, e.g. tissue or age
+    :param with_mass: boolean - whether samples without mass are included in analysis
     :return: str - title
     """
     # Initialize variable for singleton features which contains only one variant
@@ -140,8 +141,14 @@ def construct_title(analysis, species, included_variants, separation_feature):
         elif len(variable) == 1:
             features.append(variable[0])
 
+    # Create mass part
+    if with_mass:
+        wm = 'only with mass'
+    else:
+        wm = 'with and without mass'
+
     # Construct title
-    title = f'{analysis.upper()} of {", ".join(features)} {species.capitalize()} separated by {separation_feature.lower()}'
+    title = f'{analysis.upper()} of {", ".join(features)} {species.capitalize()} {wm} separated by {separation_feature.lower()}'
     return title
 
 
