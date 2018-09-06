@@ -26,18 +26,39 @@ def percentille_normalization(df, q=0.75):
     return df
 
 
-def normalize(df, function, *args, **kwargs):
+def normalize_with_access_to_all_cols(df, function, *args, **kwargs):
     """
     Apply normalization function to subset of df, which is determined by samples and meta constants which should be
     defined earlier
-    Modify input df
     :param df: df - dataframe with all data
     :param function: function - function which takes df and return df
     :param args: sequence - list, tuple, set or str with parameters in the right order to function
     :param kwargs: dict - dict with name: value of parameters to function
     :return:
     """
-    df.loc[df.index[:-meta], samples] = function(df.loc[df.index[:-meta], samples].astype(dtype='float'), *args, **kwargs)
+    df = df.copy()
+
+    # Convert data to float and perform operation
+    df.iloc[:-meta] = function(df.iloc[:-meta].astype(dtype='float', errors='ignore'), *args, **kwargs)
+    return df
+
+
+def normalize(df, function, *args, **kwargs):
+    """
+    Apply normalization function to subset of df, which is determined by samples and meta constants which should be
+    defined earlier
+    :param df: df - dataframe with all data
+    :param function: function - function which takes df and return df
+    :param args: sequence - list, tuple, set or str with parameters in the right order to function
+    :param kwargs: dict - dict with name: value of parameters to function
+    :return:
+    """
+    df = df.copy()
+
+    # Convert data to float and perform operation
+    df.loc[df.index[:-meta], samples] = function(df.loc[df.index[:-meta], samples].astype(dtype='float'), *args,
+                                                 **kwargs)
+    return df
 
 
 def find_diff(df):
@@ -133,12 +154,15 @@ def normalize_by_mass(df, mass_row_name='mass'):
     :param mass_row_name: str - name of row with mass data
     :return:
     """
+    df = df.copy()
+
     # Select intensities of samples
     samples_intensities = prepare_intensities(df)
     # Pick masses of samples
     masses = prepare_mass(df, mass_row_name)
     # Normalize
     df.loc[df.index[:-meta], samples[samples_with_mass]] = mass_norm(samples_intensities, masses)
+    return df
 
 
 def mass_norm(samples_intensities, masses):
