@@ -15,7 +15,8 @@ def z_scale(df):
 
     # Initialize scaler and scale numeric data
     ss = StandardScaler()
-    df[samples] = ss.fit_transform(df[samples])
+    # Transposes are to scale data for each peak and turn it to original form
+    df[samples] = ss.fit_transform(df[samples].T).T
     return df
 
 
