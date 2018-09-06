@@ -8,12 +8,21 @@ from .column_division import *
 def percentille_normalization(df, q=0.75):
     """
     Normalize intensities in dataframe by some of their order statistic, 75 by default
-    :param df: df - dataframe with all data, with no nonnumericals in columns with intensities
+    Data is assumed to be log-transformed
+    samples and meta constants should be predefined
+    :param df: df - dataframe with all data
     :param q: float - percentile which will be denominator
     :return: df - normalized by percentile df
     """
     df = df.copy()
-    df[samples] -= df[samples].quantile(q, axis=0)
+
+    # Because of addition of metadata to rows there is a problem - data in column is heterogeneous (intensities and categories)
+    # Thus we have to convert it to float before operations
+    numeric_part = df.loc[df.index[:-meta], samples].apply(lambda x: pd.to_numeric(x, errors='ignore'))
+
+    # Normalize by selected percentile
+    numeric_part = numeric_part.subtract(numeric_part.quantile(q, axis=1), axis=0)
+    df.loc[df.index[:-meta], samples] = numeric_part.astype('O')
     return df
 
 
