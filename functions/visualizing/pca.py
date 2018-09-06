@@ -24,6 +24,11 @@ def reduce_dimensions(df, analysis, species, separation_feature, functions, incl
 
     # Take appropriate subset of data
     ss = subset(df, included_variants, excluded_variants, with_mass=with_mass)
+
+    # Exit function if subset is empty
+    if ss.empty or ss.loc[separation_feature].isna().all():
+        return
+
     # Extract y and classes for plot
     y, classes = extract_data_for_plot(ss, separation_feature)
 
@@ -34,6 +39,7 @@ def reduce_dimensions(df, analysis, species, separation_feature, functions, incl
 def draw_for_all(df, feature, analysis, species, separation_feature, functions, excluded_variants={}, with_mass=True):
     """
     Draw and save plots for analysis of everything feature variant separately
+    Plots for subsets of data where variants for separation_feature are absent (NA) won't be drawed
     :param df: df - dataframe merged with metadata
     :param feature: str - index of df row which contains variants which should be plotted separately
     :param analysis: str - lowercase name of analysis, e.g. pca or mds
@@ -66,6 +72,7 @@ def transforming(analysis, functions, ss, title, y, classes):
     :param classes: sequence - container with unique labels of observations
     :return:
     """
+    # Depending on analysis extract additional data
     if analysis == 'pca':
         transformed, (var1, var2) = functions[analysis](ss)
         # Draw and save plot
