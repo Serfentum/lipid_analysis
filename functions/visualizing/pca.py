@@ -125,7 +125,7 @@ def draw_dimensionality_reduction(name, transformed, y, classes, colors=None, ti
 
     # Create dir for images and save svg image
     os.makedirs('img', exist_ok=True)
-    plt.savefig(f'img/{name}', format='svg', bbox_inches='tight')
+    plt.savefig(f'img/{name}.svg', format='svg', bbox_inches='tight')
 
 
 def construct_title(analysis, species, included_variants, separation_feature, with_mass):
