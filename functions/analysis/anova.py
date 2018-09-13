@@ -45,11 +45,7 @@ def anova_for_all_peaks_vs_some_variables(df, variables, interaction='double'):
 
     # Conduct anova for each peak by age and tissue with interaction and add information to dataframe
     for peak in df.columns[:-2]:
-        formula = construct_formula(peak, variables, interaction)
-        model = smf.ols(formula, df).fit()
-
-        # Take column with p-value for each of group
-        analysis = sm.stats.anova_lm(model)['PR(>F)'].drop('Residual')
+        analysis = anova(df, peak, variables, interaction)
         pvs[peak] = analysis
     return pvs
 
