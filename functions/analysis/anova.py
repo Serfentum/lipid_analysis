@@ -5,7 +5,7 @@ import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 
 
-def conduct_anova_for_all_peaks_vs_some_variables(df, variables, interaction='double'):
+def anova_for_all_peaks_with_adjustment(df, variables, interaction='double'):
     """
     Conduct anova for each peak in df vs columns listed in variables
     :param df: dataframe - df with samples - rows and peaks and features - columns (normal form)
@@ -15,7 +15,7 @@ def conduct_anova_for_all_peaks_vs_some_variables(df, variables, interaction='do
     adjusted p-value for each analysis
     """
     # Get p-values for each analysis
-    pvs = anova(df, variables, interaction)
+    pvs = anova_for_all_peaks_vs_some_variables(df, variables, interaction)
     # Flatten p-value df into 1-dimensional array
     p_values = pvs.values.ravel()
 
@@ -29,7 +29,7 @@ def conduct_anova_for_all_peaks_vs_some_variables(df, variables, interaction='do
     return p_value_appropriate
 
 
-def anova(df, variables, interaction='double'):
+def anova_for_all_peaks_vs_some_variables(df, variables, interaction='double'):
     """
     Conduct anova for each column on columns in variables - each column in df except those which are in variables will
     be analysed vs those in variables
@@ -45,13 +45,30 @@ def anova(df, variables, interaction='double'):
 
     # Conduct anova for each peak by age and tissue with interaction and add information to dataframe
     for peak in df.columns[:-2]:
-        formula = construct_formula(peak, variables, interaction=interaction)
+        formula = construct_formula(peak, variables, interaction)
         model = smf.ols(formula, df).fit()
 
         # Take column with p-value for each of group
         analysis = sm.stats.anova_lm(model)['PR(>F)'].drop('Residual')
         pvs[peak] = analysis
     return pvs
+
+
+def anova(df, feature, variables, interaction='double'):
+    """
+    Perform anova for 1 feature ~ variables and their interactions
+    :param df: df - dataframe, which contains all aforementioned columns
+    :param feature: str - name of column which will be explained
+    :param variables: list - list with column names which will be used in anova
+    :param interaction: str - one of 'no', 'double' and 'multiple' denoting type of interaction
+    :return: df column - column with p-values from sm.stats.anova_lm without residuals
+    """
+    formula = construct_formula(feature, variables, interaction)
+    model = smf.ols(formula, df).fit()
+
+    # Take column with p-value for each of group
+    analysis = sm.stats.anova_lm(model)['PR(>F)'].drop('Residual')
+    return analysis
 
 
 def construct_formula(y, xs, interaction='double'):
