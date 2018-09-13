@@ -36,7 +36,7 @@ def reduce_dimensions(df, analysis, species, separation_feature, functions, incl
     transforming(analysis, functions, ss, title, y, classes)
 
 
-def draw_for_all(df, feature, analysis, species, separation_feature, functions, excluded_variants={}, with_mass=True):
+def draw_variants(df, feature, analysis, species, separation_feature, functions, excluded_variants={}, with_mass=True):
     """
     Draw and save plots for analysis of everything feature variant separately
     Plots for subsets of data where variants for separation_feature are absent (NA) won't be drawed
@@ -59,6 +59,25 @@ def draw_for_all(df, feature, analysis, species, separation_feature, functions, 
         included_variants = {feature: variant}
         reduce_dimensions(df, analysis, species, separation_feature, functions, included_variants, excluded_variants,
                           with_mass)
+
+
+def plot_variants_with_opposite_separations(df, species, functions, analyses=('pca', 'mds'), separations=('tissue', 'age'), excluded={}):
+    """
+    Plot figure for each specified analysis with and without mass for each of 2 features in separations divided by the
+    remaining one
+    :param df: df - dataframe
+    :param species: str - name of species in analysis
+    :param functions: dict - dictionary with name: transformation function
+    :param analyses: iterable - collection with names of analyses, which are in functions container
+    :param separations: iterable - collection with 2 names of features used in separation of data in plots
+    :param excluded: dict - dictionary with feature: variants to exclude
+    :return:
+    """
+    for analysis in analyses:
+        for with_mass in [True, False]:
+            # 1 feature separated by other and vice versa
+            draw_variants(df, separations[0], analysis, species, separations[1], functions, excluded, with_mass=with_mass)
+            draw_variants(df, separations[1], analysis, species, separations[0], functions, excluded, with_mass=with_mass)
 
 
 def transforming(analysis, functions, ss, title, y, classes):
