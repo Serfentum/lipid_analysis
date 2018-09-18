@@ -35,5 +35,7 @@ def isotop_chose(group):
     :param group: df - group of grouped df
     :return: index - indices of appropriate peaks
     """
+    # Count cells with maximal concentration and take indices of peaks with greatest number of maxima
+    # It takes maximum in SAMPLE to compare is it ok?
     index = (group[samples] == group[samples].max(axis=0)).sum(axis=1).idxmax()
     return index
