@@ -122,26 +122,45 @@ def select_standard(standards):
     return standards.max()
 
 
-def find_standards(df, standard_mzs, precision=5):
+def find_standards(df, standard_mzs, precision=10):
     """
     Find standard's peaks in df given dictionary with their mzs
     :param df: df - dataframe with data
     :param standard_mzs: dict - standard names and lists of their mzs
-    :param precision: int - number of digits to round mzs before comparison
+    :param precision: int - ppm - deviation of standard mz (1kk * |expected - observed| / expected), 10 by default
     :return: df - dataframe with rows from original corresponding to standards
     """
     # Create empty df for standards
     stands = pd.DataFrame()
+    # Convert precision to float to save computations
+    precision *= 1e-6
 
-    # Compare mzs of all standards with peak's and write ones with equal to standard mzs to df
+    # Compute relative deviation of mz from standards mz and pick peaks whose deviation less than precision as standards
+    # i.e. which have approximately equal mz
     for standard, mzs in standard_mzs.items():
         for mz in mzs:
-            p = df['mz'].round(precision) == np.round(mz, precision)
+            # Find deviation
+            relative_differences = relative_difference(df['mz'], mz)
+            # Find appropriate peaks and take them
+            p = relative_differences <= precision
             stands = stands.append(df[p])
 
     # Check whether some standards are present
     assert not stands.empty, 'No standards was found in df!\nTry less strict precision'
     return stands
+
+
+def relative_difference(observed, expected):
+    """
+    Compute relative difference between observed mz and expected with formula |observed - expected| / expected
+    It is expected to work upon single value / column and single value but will do ok on both columns (it is not
+    intended usually)
+    :param observed: series - dataframe column with observed values
+    :param expected: float - expected value of variable
+    :return: series - deviation from expected value (in number of expected vals)
+    """
+    # |observed - expected| / expected
+    return np.abs(observed - expected) / expected
 
 
 def normalize_by_mass(df, mass_row_name='mass'):
